@@ -139,4 +139,16 @@ public:
         }
         return curr_bucket->hasMember(key);
     }
+    S at(T key) {
+        HNode<T,S> *t = head.load(memory_order_seq_cst);
+        FSet<T,S> *curr_bucket = t->buckets[key % t->size].load(memory_order_seq_cst);
+        if(!curr_bucket) {
+            HNode<T,S> *prev_node = t->pred;
+            if(prev_node)
+                curr_bucket = prev_node->buckets[key % prev_node->size].load(memory_order_seq_cst);
+            else
+                curr_bucket = t->buckets[key % t->size].load(memory_order_seq_cst);
+        }
+        return curr_bucket->at(key);
+    }
 };

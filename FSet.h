@@ -73,7 +73,7 @@ public:
 					resp=1;
 				}
 				else{
-					if(op->value==o->map->at(op->key))
+					if(op->value == o->map->at(op->key))
 						resp=0;
 					else{
 						*map=*(o->map);
@@ -104,6 +104,11 @@ public:
 	bool hasMember(T k){
 		FSetNode<T,S>* o = node.load(memory_order_seq_cst);
 		return o->map->find(k)!=o->map->end();
+	}
+
+	S at(T key) {
+		FSetNode<T,S>* o = node.load(memory_order_seq_cst);
+		return o->map->at(key);
 	}
 
     FSetNode<T,S> *getHead() {
