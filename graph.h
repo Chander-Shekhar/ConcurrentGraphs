@@ -7,15 +7,14 @@ using namespace std;
 
 class ConcGraph {
 private:
-    HashTable<int, HashTable<int, int>*> *adjlist;
+    HashTable<int, HashTable<int, int*>*> *adjlist;
 public:
     ConcGraph() {
-        adjlist = new HashTable<int, HashTable<int, int>*>();
+        adjlist = new HashTable<int, HashTable<int, int*>*>();
     }
 
     bool addV(int key) {
-        // Check whether new HashTable is needed or nullptr is fine.
-        return adjlist->insert(key, new HashTable<int, int>());
+        return adjlist->insert(key, new HashTable<int, int*>());
     }
 
     bool removeV(int key) {
@@ -28,12 +27,14 @@ public:
 
     bool addE(int key1, int key2) {
         int DUMMY_VAL = 0;
+        u = locateV(key1);
+        v = locateV(key2);
         // If either vertex is not present.
         if(!adjlist->contains(key1) || !adjlist->contains(key2))
             return false;
         
         // Inserts edge if not present already.
-        return adjlist->at(key1)->insert(key2, DUMMY_VAL);
+        return adjlist->at(key1)->insert(key2, &DUMMY_VAL);
     }
 
     bool removeE(int key1, int key2) {
@@ -44,7 +45,7 @@ public:
             return false;
 
         // Removes edge if present.
-        return adjlist->at(key1)->remove(key2, DUMMY_VAL);
+        return adjlist->at(key1)->remove(key2, &DUMMY_VAL);
     }
 
     bool containsE(int key1, int key2) {
