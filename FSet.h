@@ -1,4 +1,4 @@
-#include "ll.h"
+#include<unordered_map>
 #include<atomic>
 using namespace std;
 
@@ -6,11 +6,6 @@ enum OPType{
 	INS,
 	REM
 };
-
-inline long set_mark(long i){
-  i |= 0x1L;
-  return i;
-}
 
 template<typename T,typename S>
 struct FSetOP{
@@ -31,12 +26,12 @@ struct FSetOP{
 template<typename T,typename S>
 struct FSetNode
 {
-	List<T,S> *map;
+	unordered_map<T,S> *map;
 	bool ok;
 	FSetNode(){
 		this->ok = true;
 	}
-	FSetNode(List<T,S> *m_map, bool ok ) {
+	FSetNode(unordered_map<T,S> *m_map,bool ok ) {
         this->map = m_map;
         this->ok = ok;
     }
@@ -47,15 +42,14 @@ class FSet{
 private:
 	atomic<FSetNode<T,S>*> node;
 public:
-	FSet(List<T,S> *m_map, bool ok){
-		FSetNode<T,S> *p = new FSetNode<T,S>(m_map, ok);
+	FSet(unordered_map<T,S> *m_map, bool ok){
+		FSetNode<T,S> *p=new FSetNode<T,S>(m_map,ok);
 		node.store(p,memory_order_seq_cst);
 	}
 
-	List<T,S>* freeze(){
+	unordered_map<T,S>* freeze(){
 		FSetNode<T,S>* o = node.load(memory_order_seq_cst);
-		List<T,S> *new_map = new List<T,S>();
-		// Edited until here
+		unordered_map<T,S> *new_map = new unordered_map<T,S>();
 		while(o->ok){
 			*new_map = *o->map;
 			FSetNode<T,S> *n= new FSetNode<T,S>(new_map,false);
@@ -63,94 +57,59 @@ public:
 				break;
 			o=node.load(memory_order_seq_cst);
 		}
-		return node.load()->map;
+		return o->map;
 	}
 
 	bool invoke(FSetOP<T,S>* op){
 		FSetNode<T,S>* o = node.load(memory_order_seq_cst);
-		Node<T,S> *newNode = Node<T,S>(op->key, op->value);
-		Node<T,S> *pred, *curr, *succ;
-		int resp = -1;
-		FSetNode<T,S> *n = new FSetNode<T,S>(o->map, o->ok);
-		while(o->ok) {
-			// List<T,S> *map = new List<T,S>();
-			// *map=*(o->map);
-			// int resp;
-			// if(op->type==INS){
-			// 	if(o->map->find(op->key)==o->map->end()){
-			// 		(*map)[op->key]=op->value;
-			// 		resp=1;
-			// 	}
-			// 	else{
-			// 		// if(op->value == o->map->at(op->key))
-			// 			resp=0;
-			// 		// else{
-			// 		// 	*map=*(o->map);
-			// 		// 	(*map)[op->key]=op->value;
-			// 		// 	resp=2;
-			// 		// }
-			// 	}
-			// }
-			if(op->type == INS) {
-				// resp = map->insert(op->key, op->value);
-				o->map->locate(&pred, &curr, key);
-				if(curr->key == key){
-					resp = 0;
+
+		while(o->ok){
+			unordered_map<T,S> *map = new unordered_map<T,S>();
+			*map = *(o->map);
+			int resp;
+			if(op->type == INS){
+				if(o->map->find(op->key)==o->map->end()){
+					(*map)[op->key]=op->value;
+					resp=1;
 				}
 				else{
-					newNode->next.store(curr,memory_order_seq_cst);  
-					if(pred->next.compare_exchange_strong(curr, newNode, memory_order_seq_cst))
-						resp = 1;
-						node.compare_exchange_strong(o, n);
+					// if(op->value == o->map->at(op->key))
+						resp=0;
+					// else{
+					// 	*map=*(o->map);
+					// 	(*map)[op->key]=op->value;
+					// 	resp=2;
+					// }
 				}
 			}
-
-			else if(op->type == REM) {
-				// resp = map->remove(op->key);
-				pred = Head;
-				o->map->locate(&pred, &curr, key);
-				if(curr->key != key)
-					resp = 0;
-				else {
-					succ = curr->next.load(memory_order_seq_cst);
-					if(!is_marked_ref((long) succ))
-						if(atomic_compare_exchange_strong_explicit(&curr->next, &succ,(Node<T,S>*)get_marked_ref((long)succ), memory_order_seq_cst, memory_order_seq_cst)) {
-							resp = 1;
-							node.compare_exchange_strong(o, n);
-							if(!atomic_compare_exchange_strong_explicit(&pred->next, &curr, succ, memory_order_seq_cst, memory_order_seq_cst))
-								o->map->locate(&pred, &curr, curr->key);
-						}
+			else if(op->type==REM){
+				if(o->map->find(op->key)==o->map->end())
+					resp=0;
+				else{
+					map->erase(op->key);
+					resp=1;
 				}
 			}
-			// else if(op->type==REM) {
-			// 	if(o->map->find(op->key)==o->map->end())
-			// 		resp=0;
-			// 	else{
-			// 		o->map[op->key] = set_mark(o->map->at(op->key));
-			// 		map->erase(op->key);
-			// 		resp=1;
-			// 	}
-			// }
-
-			// FSetNode<T,S>* n=new FSetNode<T,S>(map,true);
-			// if(node.compare_exchange_strong(o,n)){
-			// 	op->resp=resp;
-			// 	return true;
-			// }
-
-			// See how to return right response.
-			o = node.load(memory_order_seq_cst);
-			if(resp >= 0 && o->ok) {
-				op->resp = resp;
+			FSetNode<T,S>* n=new FSetNode<T,S>(map,true);
+			if(node.compare_exchange_strong(o,n)){
+				op->resp=resp;
 				return true;
 			}
+			o=node.load(memory_order_seq_cst);
 		}
 		return false;
 	}
 
-	bool hasMember(T k, Node<T,S> *n){
+	bool hasMember(T k){
 		FSetNode<T,S>* o = node.load(memory_order_seq_cst);
-		return o->map->contains(k, &n);
+		return o->map->find(k)!=o->map->end();
+	}
+
+	S at(T k) {
+		FSetNode<T,S>* o = node.load(memory_order_seq_cst);
+		if(o->map->find(k) != o->map->end())
+			return o->map->at(k);
+		return nullptr;
 	}
 
     FSetNode<T,S> *getHead() {
