@@ -2,6 +2,7 @@
 #include <iostream>
 #include "HNode.h"
 #include "utils.h"
+#include <bits/stdc++.h>
 
 using namespace std;
 
@@ -12,7 +13,7 @@ public:
     ConcGraph() {
         adjlist = new HashTable<int, HashTable<int, int*>*>();
     }
-
+    
     bool addV(int key) {
         return adjlist->insert(key, new HashTable<int, int*>());
     }
@@ -26,33 +27,39 @@ public:
     }
 
     bool addE(int key1, int key2) {
-        int DUMMY_VAL = 0;
-        u = locateV(key1);
-        v = locateV(key2);
+        // u = locateV(key1);
+        // v = locateV(key2);
+        // if(!adjlist->contains(key1) || !adjlist->contains(key2))
+        //     return false;
         // If either vertex is not present.
-        if(!adjlist->contains(key1) || !adjlist->contains(key2))
+        pair<unordered_map<int, HashTable<int, int*>*>::iterator, unordered_map<int, HashTable<int, int*>*>::iterator> p1 = adjlist->at(key1);
+        pair<unordered_map<int, HashTable<int, int*>*>::iterator, unordered_map<int, HashTable<int, int*>*>::iterator> p2 = adjlist->at(key2);
+        if(p1.first == p1.second || p2.first == p2.second)
             return false;
-        
         // Inserts edge if not present already.
-        return adjlist->at(key1)->insert(key2, &DUMMY_VAL);
+        return (p1.first->second->insert(key2, (int *)(p2.first->second), p1.first, p2.first));
     }
 
     bool removeE(int key1, int key2) {
-        int DUMMY_VAL = 0;
         // If key1 is not present then edge is already deleted.
         // If key2 is not present then check if we need to physically remove key2 from edgelist.
-        if(!adjlist->contains(key1) || !adjlist->contains(key2))
+        pair<unordered_map<int, HashTable<int, int*>*>::iterator, unordered_map<int, HashTable<int, int*>*>::iterator> p1 = adjlist->at(key1);
+        pair<unordered_map<int, HashTable<int, int*>*>::iterator, unordered_map<int, HashTable<int, int*>*>::iterator> p2 = adjlist->at(key2);
+        if(p1.first == p1.second || p2.first == p2.second)
             return false;
-
         // Removes edge if present.
-        return adjlist->at(key1)->remove(key2, &DUMMY_VAL);
+        return (p1.first->second)->remove(key2, (int *)nullptr, p1.first, p2.first);
     }
 
     bool containsE(int key1, int key2) {
-        if(!adjlist->contains(key1) || !adjlist->contains(key2))
+        // if(!adjlist->contains(key1) || !adjlist->contains(key2))
+        //     return false;
+        pair<unordered_map<int, HashTable<int, int*>*>::iterator, unordered_map<int, HashTable<int, int*>*>::iterator> p1 = adjlist->at(key1);
+        pair<unordered_map<int, HashTable<int, int*>*>::iterator, unordered_map<int, HashTable<int, int*>*>::iterator> p2 = adjlist->at(key2);
+        if(p1.first == p1.second || p2.first == p2.second)
             return false;
 
-        return adjlist->at(key1)->contains(key2);
+        return (p1.first->second->contains(key2) && !is_marked_ref((long)p1.first->second) && !is_marked_ref((long)p2.first->second));
     }
 
 };
