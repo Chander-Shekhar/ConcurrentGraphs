@@ -1,7 +1,7 @@
 #include <atomic>
 #include <iostream>
 #include "HNode.h"
-#include "utils.h"
+// #include "utils.h"
 #include <bits/stdc++.h>
 
 using namespace std;
@@ -62,4 +62,8 @@ public:
         return (p1.first->second->contains(key2) && !is_marked_ref((long)p1.first->second) && !is_marked_ref((long)p2.first->second));
     }
 
+    void initGraph(int n){
+        for(int i=0;i<n;i++)
+            addV(i);
+    }
 };
