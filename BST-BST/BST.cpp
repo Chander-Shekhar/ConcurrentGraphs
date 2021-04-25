@@ -66,6 +66,12 @@ bool ISNULL(void *ptr)
 	return false;
 }
 
+
+
+class BST{
+public:
+    
+
 struct Operation {};
 
 struct Node {
@@ -73,19 +79,19 @@ struct Node {
     Operation* volatile op;
     Node* volatile left;
     Node* volatile right;
-    Node* volatile rootEdge;
+    BST* rootEdge;
     Node(int key){
         this->key=key;
         op=NULL;
         left=(Node*)SETNULL(NULL);
         right=(Node*)SETNULL(NULL);
-        rootEdge=(Node*)SETNULL(NULL);
+        rootEdge=new BST();
     }
     Node(){        
         op=NULL;
         left=(Node*)SETNULL(NULL);
         right=(Node*)SETNULL(NULL);
-        rootEdge=(Node*)SETNULL(NULL);
+        // rootEdge=new BST();
     }
 }root;
 
@@ -99,6 +105,7 @@ struct ChildCASOp : Operation {
         this->update=update;       
     }
 };
+
 struct RelocateOp : Operation {
     int volatile state = ONGOING;
     Node* dest;
@@ -114,155 +121,156 @@ struct RelocateOp : Operation {
 };
 
 
-void helpChildCAS(ChildCASOp* op, Node* dest) {
-    Node* volatile* address = op->isLeft ? &dest->left : &dest->right;
-    __sync_bool_compare_and_swap(address, op->expected, op->update);
-    __sync_bool_compare_and_swap(&dest->op, (Operation*)SETFLAG(op, CHILDCAS), (Operation*)SETFLAG(op, NONE));
-}
+    
+    void helpChildCAS(ChildCASOp* op, Node* dest) {
+        Node* volatile* address = op->isLeft ? &dest->left : &dest->right;
+        __sync_bool_compare_and_swap(address, op->expected, op->update);
+        __sync_bool_compare_and_swap(&dest->op, (Operation*)SETFLAG(op, CHILDCAS), (Operation*)SETFLAG(op, NONE));
+    }
 
-void helpMarked(Node* pred, Operation* predOp, Node* curr) {
-    Node* newRef;
-    if (ISNULL(curr->left)) {
-        if (ISNULL(curr->right))
-            newRef = (Node *)SETNULL(curr);
-        else
-            newRef = curr->right;
-    }else
-        newRef = curr->left;
-    Operation* casOp = new ChildCASOp(curr == pred->left, curr, newRef);
-    if (__sync_bool_compare_and_swap(&pred->op, predOp, (Operation*)SETFLAG(casOp, CHILDCAS)))
-        helpChildCAS((ChildCASOp*)casOp, pred);
-}
+    void helpMarked(Node* pred, Operation* predOp, Node* curr) {
+        Node* newRef;
+        if (ISNULL(curr->left)) {
+            if (ISNULL(curr->right))
+                newRef = (Node *)SETNULL(curr);
+            else
+                newRef = curr->right;
+        }else
+            newRef = curr->left;
+        Operation* casOp = new ChildCASOp(curr == pred->left, curr, newRef);
+        if (__sync_bool_compare_and_swap(&pred->op, predOp, (Operation*)SETFLAG(casOp, CHILDCAS)))
+            helpChildCAS((ChildCASOp*)casOp, pred);
+    }
 
-bool helpRelocate(RelocateOp* op, Node* pred, Operation* predOp, Node* curr) {
-    int seenState = op->state;
-    if (seenState == ONGOING) {
-        Operation* seenOp = __sync_val_compare_and_swap(&op->dest->op, op->destOp, (Operation*)SETFLAG(op, RELOCATE));
-        if ((seenOp == op->destOp) || (seenOp == (Operation*)SETFLAG(op, RELOCATE))) {
-            __sync_bool_compare_and_swap(&op->state, ONGOING, SUCCESSFUL);
-            seenState = SUCCESSFUL;
-        } else {
-            seenState = __sync_val_compare_and_swap(&op->state, ONGOING, FAILED);
+    bool helpRelocate(RelocateOp* op, Node* pred, Operation* predOp, Node* curr) {
+        int seenState = op->state;
+        if (seenState == ONGOING) {
+            Operation* seenOp = __sync_val_compare_and_swap(&op->dest->op, op->destOp, (Operation*)SETFLAG(op, RELOCATE));
+            if ((seenOp == op->destOp) || (seenOp == (Operation*)SETFLAG(op, RELOCATE))) {
+                __sync_bool_compare_and_swap(&op->state, ONGOING, SUCCESSFUL);
+                seenState = SUCCESSFUL;
+            } else {
+                seenState = __sync_val_compare_and_swap(&op->state, ONGOING, FAILED);
+            }
         }
+        if (seenState == SUCCESSFUL) {
+            __sync_bool_compare_and_swap(&op->dest->key, op->removeKey, op->replaceKey);
+            __sync_bool_compare_and_swap(&op->dest->op, (Operation*)SETFLAG(op, RELOCATE), (Operation*)SETFLAG(op, NONE));
+        }
+        bool result = (seenState == SUCCESSFUL);
+        if (op->dest == curr) return result;
+            __sync_bool_compare_and_swap(&curr->op, (Operation*)SETFLAG(op, RELOCATE), (Operation*)SETFLAG(op, result ? MARK : NONE));
+        if (result) {
+            if (op->dest == pred) 
+            predOp = (Operation*)SETFLAG(op, NONE);
+            helpMarked(pred, predOp, curr);
+        }
+        return result;
     }
-    if (seenState == SUCCESSFUL) {
-        __sync_bool_compare_and_swap(&op->dest->key, op->removeKey, op->replaceKey);
-        __sync_bool_compare_and_swap(&op->dest->op, (Operation*)SETFLAG(op, RELOCATE), (Operation*)SETFLAG(op, NONE));
-    }
-    bool result = (seenState == SUCCESSFUL);
-    if (op->dest == curr) return result;
-        __sync_bool_compare_and_swap(&curr->op, (Operation*)SETFLAG(op, RELOCATE), (Operation*)SETFLAG(op, result ? MARK : NONE));
-    if (result) {
-        if (op->dest == pred) 
-        predOp = (Operation*)SETFLAG(op, NONE);
-        helpMarked(pred, predOp, curr);
-    }
-    return result;
-}
 
 
-void help(Node* pred, Operation* predOp, Node* curr, Operation* currOp) {
-    if (GETFLAG(currOp) == CHILDCAS)
-        helpChildCAS((ChildCASOp*)UNFLAG(currOp), curr);
-    else if (GETFLAG(currOp) == RELOCATE)
-        helpRelocate((RelocateOp*)UNFLAG(currOp), pred, predOp, curr);
-    else if (GETFLAG(currOp) == MARK)
-        helpMarked(pred, predOp, curr);
-}
-
-int find(int k, Node*& pred, Operation*& predOp, Node*& curr, Operation*& currOp, Node* auxRoot) {
-    int result, currKey;
-    Node* next, * lastRight;
-    Operation* lastRightOp;
-    retry:
-    result = NOTFOUND_R;
-    curr = auxRoot;
-    currOp = curr->op;
-    if (GETFLAG(currOp) != NONE) {
-        if (auxRoot == &root) {
+    void help(Node* pred, Operation* predOp, Node* curr, Operation* currOp) {
+        if (GETFLAG(currOp) == CHILDCAS)
             helpChildCAS((ChildCASOp*)UNFLAG(currOp), curr);
-            goto retry;
-        } else return ABORT;
+        else if (GETFLAG(currOp) == RELOCATE)
+            helpRelocate((RelocateOp*)UNFLAG(currOp), pred, predOp, curr);
+        else if (GETFLAG(currOp) == MARK)
+            helpMarked(pred, predOp, curr);
     }
-    next = curr->right;
-    lastRight = curr;
-    lastRightOp = currOp;
-    while (!ISNULL(next) ) {
-        pred = curr;
-        predOp = currOp;
-        curr = next;
+
+    int find(int k, Node*& pred, Operation*& predOp, Node*& curr, Operation*& currOp, Node* auxRoot) {
+        int result, currKey;
+        Node* next, * lastRight;
+        Operation* lastRightOp;
+        retry:
+        result = NOTFOUND_R;
+        curr = auxRoot;
         currOp = curr->op;
         if (GETFLAG(currOp) != NONE) {
-            help(pred, predOp, curr, currOp);
-            goto retry;
+            if (auxRoot == &root) {
+                helpChildCAS((ChildCASOp*)UNFLAG(currOp), curr);
+                goto retry;
+            } else return ABORT;
         }
-        currKey = curr->key;
-        if (k < currKey) {
-            result = NOTFOUND_L;
-            next = curr->left;
-        } else if (k > currKey) {
-            result = NOTFOUND_R;
-            next = curr->right;
-            lastRight = curr;
-            lastRightOp = currOp;
-        } else {
-            result = FOUND;
-            break;
+        next = curr->right;
+        lastRight = curr;
+        lastRightOp = currOp;
+        while (!ISNULL(next) ) {
+            pred = curr;
+            predOp = currOp;
+            curr = next;
+            currOp = curr->op;
+            if (GETFLAG(currOp) != NONE) {
+                help(pred, predOp, curr, currOp);
+                goto retry;
+            }
+            currKey = curr->key;
+            if (k < currKey) {
+                result = NOTFOUND_L;
+                next = curr->left;
+            } else if (k > currKey) {
+                result = NOTFOUND_R;
+                next = curr->right;
+                lastRight = curr;
+                lastRightOp = currOp;
+            } else {
+                result = FOUND;
+                break;
+            }
         }
+        if ((result != FOUND) && (lastRightOp != lastRight->op)) goto retry;
+        if (curr->op != currOp) goto retry;
+        return result;
     }
-    if ((result != FOUND) && (lastRightOp != lastRight->op)) goto retry;
-    if (curr->op != currOp) goto retry;
-    return result;
-}
 
-bool contains(int k) {
-    Node* pred, * curr;
-    Operation* predOp, * currOp;
-    return find(k, pred, predOp, curr, currOp, &root) == FOUND;
-}
-
-bool add(int k) {
-    Node* pred, * curr, * newNode;
-    Operation* predOp, * currOp, * casOp;
-    int result;
-    while (true) {
-        result = find(k, pred, predOp, curr, currOp, &root);
-        if (result == FOUND) return false;
-        newNode = new Node(k);
-        bool isLeft = (result == NOTFOUND_L);
-        Node* old = isLeft ? curr->left : curr->right;
-        casOp = new ChildCASOp(isLeft, old, newNode);
-        if (__sync_bool_compare_and_swap(&curr->op, currOp, (Operation*)SETFLAG(casOp, CHILDCAS))) {
-            helpChildCAS((ChildCASOp*)casOp, curr);
-            return true;
-        }
+    bool contains(int k) {
+        Node* pred, * curr;
+        Operation* predOp, * currOp;
+        return find(k, pred, predOp, curr, currOp, &root) == FOUND;
     }
-}
 
-
-bool remove(int k) {
-    Node* pred, * curr, * replace;
-    Operation* predOp, * currOp, * replaceOp, * relocOp;
-    while (true) {
-        if (find(k, pred, predOp, curr, currOp, &root) != FOUND) return false;
-        if (ISNULL(curr->right) || ISNULL(curr->left)) {
-            // Node has < 2 children
-            if (__sync_bool_compare_and_swap(&curr->op, currOp, (Operation*)SETFLAG(currOp, MARK))) {
-                helpMarked(pred, predOp, curr);
+    bool add(int k) {
+        Node* pred, * curr, * newNode;
+        Operation* predOp, * currOp, * casOp;
+        int result;
+        while (true) {
+            result = find(k, pred, predOp, curr, currOp, &root);
+            if (result == FOUND) return false;
+            newNode = new Node(k);
+            bool isLeft = (result == NOTFOUND_L);
+            Node* old = isLeft ? curr->left : curr->right;
+            casOp = new ChildCASOp(isLeft, old, newNode);
+            if (__sync_bool_compare_and_swap(&curr->op, currOp, (Operation*)SETFLAG(casOp, CHILDCAS))) {
+                helpChildCAS((ChildCASOp*)casOp, curr);
                 return true;
             }
-        } else {
-        // Node has 2 children
-            if ((find(k, pred, predOp, replace, replaceOp, curr) == ABORT) || (curr->op != currOp)) continue;
-                relocOp = new RelocateOp(curr, currOp, k, replace->key);
-            if (__sync_bool_compare_and_swap(&replace->op, replaceOp, (Operation*)SETFLAG(relocOp, RELOCATE))) {
-                if (helpRelocate((RelocateOp *)relocOp, pred, predOp, replace)) return true;
+        }
+    }
+
+
+    bool remove(int k) {
+        Node* pred, * curr, * replace;
+        Operation* predOp, * currOp, * replaceOp, * relocOp;
+        while (true) {
+            if (find(k, pred, predOp, curr, currOp, &root) != FOUND) return false;
+            if (ISNULL(curr->right) || ISNULL(curr->left)) {
+                // Node has < 2 children
+                if (__sync_bool_compare_and_swap(&curr->op, currOp, (Operation*)SETFLAG(currOp, MARK))) {
+                    helpMarked(pred, predOp, curr);
+                    return true;
+                }
+            } else {
+            // Node has 2 children
+                if ((find(k, pred, predOp, replace, replaceOp, curr) == ABORT) || (curr->op != currOp)) continue;
+                    relocOp = new RelocateOp(curr, currOp, k, replace->key);
+                if (__sync_bool_compare_and_swap(&replace->op, replaceOp, (Operation*)SETFLAG(relocOp, RELOCATE))) {
+                    if (helpRelocate((RelocateOp *)relocOp, pred, predOp, replace)) return true;
+                }
             }
         }
     }
-}
 
-
+};
 
 class runner{
 public:
@@ -272,6 +280,7 @@ public:
 	    M=m;
 	    L1=l1;
 	    File_Filter = fopen("BST.txt","w");
+        bst=new BST();
 		waiting_time=vector<time_t>(n);
 	}
 	~runner(){
@@ -293,12 +302,12 @@ public:
 
 			if(dist2(generator2)){
 				if(dist3(generator3))   
-                    add(rand()%100);
+                    bst->add(rand()%100);
 				else
-					remove(rand()%100);
+					bst->remove(rand()%100);
 			}
 			else{
-                contains(rand()%100);
+                bst->contains(rand()%100);
 			}
 			auto end = chrono::system_clock::now();
 			time_t actEnterTime=chrono::system_clock::to_time_t(end);
@@ -321,6 +330,7 @@ public:
 	}
 private:
 	FILE * File_Filter;
+    BST *bst;
 	ofstream File;
 	int N,M,L1;
 };
