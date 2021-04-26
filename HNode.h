@@ -54,7 +54,7 @@ private:
         }
     }
 
-    bool apply(OPType type, T key, S value, unordered_map<T, HashTable<T, S>*>::iterator u, unordered_map<T, HashTable<T, S>*>::iterator v) {
+    bool apply(OPType type, T key, S value, typename unordered_map<T, HashTable<T, S>*>::iterator u, typename unordered_map<T, HashTable<T, S>*>::iterator v) {
         FSetOP<T,S> *op = new FSetOP<T,S>(type, key, value);
         while(true) {
             HNode<T,S> *t = head.load(memory_order_seq_cst);
@@ -138,7 +138,7 @@ public:
         return resp;
     }
 
-    bool insert(T key, S value, unordered_map<T, HashTable<T, S>*>::iterator u, unordered_map<T, HashTable<T, S>*>::iterator v) {
+    bool insert(T key, S value, typename unordered_map<T, HashTable<T, S>*>::iterator u, typename unordered_map<T, HashTable<T, S>*>::iterator v) {
         bool resp = apply(INS, key, value, u, v);
         
         // HNode<T,S> *t = head.load(memory_order_seq_cst);
@@ -161,7 +161,7 @@ public:
         return resp;
     }
 
-    bool remove(T key, S value, unordered_map<T, HashTable<T, S>*>::iterator u, unordered_map<T, HashTable<T, S>*>::iterator v) {
+    bool remove(T key, S value, typename unordered_map<T, HashTable<T, S>*>::iterator u, typename unordered_map<T, HashTable<T, S>*>::iterator v) {
         bool resp = apply(REM, key, value, u, v);
         HNode<T,S> *t = head.load(memory_order_seq_cst);
         int size=t->size;
@@ -187,7 +187,7 @@ public:
         }
         return curr_bucket->hasMember(key);
     }
-    pair<unordered_map<T,S>::iterator, unordered_map<T,S>::iterator> at(T key) {
+    pair<typename unordered_map<T,S>::iterator, typename unordered_map<T,S>::iterator> at(T key) {
         HNode<T,S> *t = head.load(memory_order_seq_cst);
         FSet<T,S> *curr_bucket = t->buckets[key % t->size].load(memory_order_seq_cst);
         if(!curr_bucket) {

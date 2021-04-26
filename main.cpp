@@ -50,7 +50,7 @@ enum type {ADDV, ADDE, REMV, REME, CONV, CONE};
 int optype; // what type of opearations 
 char out[30]; // dataset file name,
 int naddV=0, naddE=0, nremV=0, nremE=0, nconV=0, nconE=0; 
-pthread_mutex_t lock;
+// pthread_mutex_t lock;																																		
 
 typedef struct infothread{
   long tid;
@@ -71,7 +71,7 @@ void* pthread_call(void* t)
   	long long int numOfOperations_addVertex = numOfOperations * 0.25; 	// 25% for add vertex
   	long long int numOfOperations_removeVertex = numOfOperations *0.1 ; 	// 10% for remove vertex
   	long long int numOfOperations_removeEdge = numOfOperations * 0.1; 	// 10% for remove edge
-  	long long int numOfOperations_containsVertex = numOfOperations *0.15; 	// 15% for contains vertex
+  	long long int numOfOperations_containsVertex = numOfOperations *0.15; 	// 15% f																														or contains vertex
   	long long int numOfOperations_containsEdge = numOfOperations * 0.15; 	// 15% for contains edge
 
 	long long int total = numOfOperations_addEdge + numOfOperations_addVertex + numOfOperations_removeVertex + numOfOperations_removeEdge + numOfOperations_containsVertex + numOfOperations_containsEdge; 
@@ -187,7 +187,7 @@ int main(int argc, char*argv[])
  	//ops = 0;
 //strcpy(out,argv[4]);
 	
-    pthread_mutex_init(&lock, NULL);
+    // pthread_mutex_init(&lock, NULL);
 	//create initial vertices
 	vertexID = n+ 1;	
 	sg.initGraph(n);

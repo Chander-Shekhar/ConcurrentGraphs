@@ -96,7 +96,7 @@ public:
 			FSetNode<T,S>* n=new FSetNode<T,S>(map,true);
 			if(node.compare_exchange_strong(o,n)){
 				if(op->type == REM && resp)
-					o->map[op->key] = (S)set_mark((long)(o->map[op->key]));
+					o->map->at(op->key) = (S)set_mark((long)(o->map->at(op->key)));
 				op->resp=resp;
 				return true;
 			}
@@ -155,7 +155,7 @@ public:
 		return o->map->find(k)!=o->map->end();
 	}
 
-	pair<unordered_map<T,S>::iterator, unordered_map<T,S>::iterator> at(T k) {
+	pair<typename unordered_map<T,S>::iterator, typename unordered_map<T,S>::iterator> at(T k) {
 		FSetNode<T,S>* o = node.load(memory_order_seq_cst);
 		// if(o->map->find(k) != o->map->end())
 		// 	return o->map->at(k);
