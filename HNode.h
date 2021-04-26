@@ -70,7 +70,10 @@ private:
             }
             else if(type == REM and curr_bucket->getHead()->map->size() == 1)
                 t->used--;
-            if(curr_bucket->invoke(op, u, v))
+            if(is_marked_ref((long)u->second) || is_marked_ref((long)v->second)) {
+				return 0;
+			}
+            if(curr_bucket->invoke(op))
                 return op->getResponse();
         }
     }

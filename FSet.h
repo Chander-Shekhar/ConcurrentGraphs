@@ -96,7 +96,7 @@ public:
 			FSetNode<T,S>* n=new FSetNode<T,S>(map,true);
 			if(node.compare_exchange_strong(o,n)){
 				if(op->type == REM && resp)
-					o->map[op->key] = (S)set_mark((long)o->map[op->key]);
+					o->map[op->key] = (S)set_mark((long)(o->map[op->key]));
 				op->resp=resp;
 				return true;
 			}
@@ -105,50 +105,50 @@ public:
 		return false;
 	}
 
-	bool invoke(FSetOP<T,S>* op, unordered_map<T, HashTable<T, S>*>::iterator u, unordered_map<T, HashTable<T, S>*>::iterator v) {
-		FSetNode<T,S>* o = node.load(memory_order_seq_cst);
+	// bool invoke(FSetOP<T,S>* op, unordered_map<T, HashTable<T, S>*>::iterator u, unordered_map<T, HashTable<T, S>*>::iterator v) {
+	// 	FSetNode<T,S>* o = node.load(memory_order_seq_cst);
 
-		while(o->ok){
-			unordered_map<T,S> *map = new unordered_map<T,S>();
-			*map = *(o->map);
-			int resp;
-			if(is_marked_ref((long)u->second) || is_marked_ref((long)v->second)) {
-				resp = 0;
-			}
-			else if(op->type == INS){
-				if(o->map->find(op->key)==o->map->end()){
-					(*map)[op->key]=op->value;
-					resp=1;
-				}
-				else{
-					// if(op->value == o->map->at(op->key))
-					resp=0;
-					// else{
-					// 	*map=*(o->map);
-					// 	(*map)[op->key]=op->value;
-					// 	resp=2;
-					// }
-				}
-			}
-			else if(op->type==REM){
-				if(o->map->find(op->key)==o->map->end())
-					resp=0;
-				else{
-					map->erase(op->key);
-					resp=1;
-				}
-			}
-			FSetNode<T,S>* n=new FSetNode<T,S>(map,true);
-			if(node.compare_exchange_strong(o,n)){
-				if(op->type == REM && resp)
-					o->map[op->key] = (S)set_mark((long)o->map[op->key]);
-				op->resp=resp;
-				return true;
-			}
-			o=node.load(memory_order_seq_cst);
-		}
-		return false;
-	}
+	// 	while(o->ok){
+	// 		unordered_map<T,S> *map = new unordered_map<T,S>();
+	// 		*map = *(o->map);
+	// 		int resp;
+	// 		if(is_marked_ref((long)u->second) || is_marked_ref((long)v->second)) {
+	// 			resp = 0;
+	// 		}
+	// 		else if(op->type == INS){
+	// 			if(o->map->find(op->key)==o->map->end()){
+	// 				(*map)[op->key]=op->value;
+	// 				resp=1;
+	// 			}
+	// 			else{
+	// 				// if(op->value == o->map->at(op->key))
+	// 				resp=0;
+	// 				// else{
+	// 				// 	*map=*(o->map);
+	// 				// 	(*map)[op->key]=op->value;
+	// 				// 	resp=2;
+	// 				// }
+	// 			}
+	// 		}
+	// 		else if(op->type==REM){
+	// 			if(o->map->find(op->key)==o->map->end())
+	// 				resp=0;
+	// 			else{
+	// 				map->erase(op->key);
+	// 				resp=1;
+	// 			}
+	// 		}
+	// 		FSetNode<T,S>* n=new FSetNode<T,S>(map,true);
+	// 		if(node.compare_exchange_strong(o,n)){
+	// 			if(op->type == REM && resp)
+	// 				o->map[op->key] = (S)set_mark((long)o->map[op->key]);
+	// 			op->resp=resp;
+	// 			return true;
+	// 		}
+	// 		o=node.load(memory_order_seq_cst);
+	// 	}
+	// 	return false;
+	// }
 
 	bool hasMember(T k){
 		FSetNode<T,S>* o = node.load(memory_order_seq_cst);
