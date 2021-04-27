@@ -42,7 +42,7 @@ public:
 
         if(p1!=FOUND || p2!=FOUND)
             return false;
-        return (curr1->rootEdge->add(key2));
+        return (curr1->rootEdge->add(key2,curr2));
     }
 
     bool removeE(int key1, int key2) {
@@ -56,7 +56,7 @@ public:
 
         if(p1!=FOUND || p2!=FOUND)
             return false;
-        return (curr1->rootEdge->remove(key2));
+        return (curr1->rootEdge->removeE(key2));
     }
 
     bool containsE(int key1, int key2) {
@@ -71,7 +71,7 @@ public:
         if(p1!=FOUND || p2!=FOUND)
             return false;
             
-        return true;
+        return curr1->rootEdge->contains(key2) && GETFLAG(curr1->backNode)!=MARK && GETFLAG(curr2->backNode)!=MARK;
     }
 
     void initGraph(int n){

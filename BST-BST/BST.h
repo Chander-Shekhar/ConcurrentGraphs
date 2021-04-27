@@ -86,6 +86,7 @@ public:
             op=NULL;
             left=(Node*)SETNULL(NULL);
             right=(Node*)SETNULL(NULL);
+            backNode=(Node*)SETNULL(NULL);
             rootEdge=new BST();
         }
         Node(int key, Node* backNode){
@@ -208,10 +209,36 @@ public:
             predOp = currOp;
             curr = next;
             currOp = curr->op;
+
+            // /*     For deletion of edges for which vertex got deleted) 
+
+            if(GETFLAG(curr->backNode) == MARK ){
+                Node * replace;
+                Operation * replaceOp, * relocOp;
+                    if (ISNULL(curr->right) || ISNULL(curr->left)) {
+                        // Node has < 2 children
+                        if (__sync_bool_compare_and_swap(&curr->op, currOp, (Operation*)SETFLAG(currOp, MARK))) {
+                            helpMarked(pred, predOp, curr);
+                        }
+                    } else {
+                    // Node has 2 children
+                        if ((find(k, pred, predOp, replace, replaceOp, curr) == ABORT) || (curr->op != currOp)) goto retry;
+                        
+                        relocOp = new RelocateOp(curr, currOp, k, replace->key);
+                        if (__sync_bool_compare_and_swap(&replace->op, replaceOp, (Operation*)SETFLAG(relocOp, RELOCATE))) {
+                            if (helpRelocate((RelocateOp *)relocOp, pred, predOp, replace)) ;
+                        }
+                    }
+                
+            }
+            // */
+
+
             if (GETFLAG(currOp) != NONE) {
                 help(pred, predOp, curr, currOp);
                 goto retry;
             }
+
             currKey = curr->key;
             if (k < currKey) {
                 result = NOTFOUND_L;
@@ -237,6 +264,9 @@ public:
         return find(k, pred, predOp, curr, currOp, &root) == FOUND;
     }
 
+   
+
+
     bool add(int k) {
         Node* pred, * curr, * newNode;
         Operation* predOp, * currOp, * casOp;
@@ -261,7 +291,7 @@ public:
         int result;
         while (true) {
             result = find(k, pred, predOp, curr, currOp, &root);
-            if (result == FOUND) return false;
+            if (result == FOUND || GETFLAG(backNode->op)==MARK ) return false;
             newNode = new Node(k, backNode);
             bool isLeft = (result == NOTFOUND_L);
             Node* old = isLeft ? curr->left : curr->right;
@@ -296,6 +326,30 @@ public:
             }
         }
     }
+
+    bool removeE(int k) {
+        Node* pred, * curr, * replace;
+        Operation* predOp, * currOp, * replaceOp, * relocOp;
+        while (true) {
+            if (find(k, pred, predOp, curr, currOp, &root) != FOUND || GETFLAG(curr->backNode)==MARK ) return false;
+            if (ISNULL(curr->right) || ISNULL(curr->left)) {
+                // Node has < 2 children
+                if (__sync_bool_compare_and_swap(&curr->op, currOp, (Operation*)SETFLAG(currOp, MARK))) {
+                    helpMarked(pred, predOp, curr);
+                    return true;
+                }
+            } else {
+            // Node has 2 children
+                if ((find(k, pred, predOp, replace, replaceOp, curr) == ABORT) || (curr->op != currOp)) continue;
+                
+                relocOp = new RelocateOp(curr, currOp, k, replace->key);
+                if (__sync_bool_compare_and_swap(&replace->op, replaceOp, (Operation*)SETFLAG(relocOp, RELOCATE))) {
+                    if (helpRelocate((RelocateOp *)relocOp, pred, predOp, replace)) return true;
+                }
+            }
+        }
+    }
+
 
 };
 
