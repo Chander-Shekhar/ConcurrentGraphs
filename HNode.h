@@ -73,7 +73,7 @@ private:
             if(is_marked_ref((long)u->second) || is_marked_ref((long)v->second)) {
 				return 0;
 			}
-            if(curr_bucket->invoke(op))
+            if(curr_bucket->edgeInvoke(op))
                 return op->getResponse();
         }
     }
