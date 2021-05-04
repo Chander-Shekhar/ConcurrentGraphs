@@ -105,14 +105,16 @@ public:
 		return false;
 	}
 
-	bool edgeInvoke(FSetOP<T,S>* op) {
+	bool edgeInvoke(FSetOP<T,S>* op, int **u, int **v) {
 		FSetNode<T,S>* o = node.load(memory_order_seq_cst);
 
 		while(o->ok){
 			unordered_map<T,S> *map = new unordered_map<T,S>();
 			*map = *(o->map);
 			int resp;
-			if(op->type == INS){
+			if(is_marked_ref((long)(*u)) || is_marked_ref((long)(*v)))
+				resp = 0;
+			else if(op->type == INS){
 				if(o->map->find(op->key)==o->map->end() || (is_marked_ref((long)(*o->map->at(op->key))))){
 					(*map)[op->key]=op->value;
 					resp=1;

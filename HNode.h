@@ -9,7 +9,8 @@ template<typename T,typename S>
 class HNode{
 public:
     atomic<FSet<T,S>*> *buckets;
-    int size, used;
+    int size;
+    // int used;
     HNode<T,S> *pred;
     HNode(int capacity, HNode<T,S> *pred) {
         buckets = new atomic<FSet<T,S>*>[capacity];
@@ -17,7 +18,7 @@ public:
             buckets[i].store(nullptr);
         size = capacity;
         this->pred = pred;
-        used = 0;
+        // used = 0;
     }
     // HNode(atomic<FSet<T,S>*> *buckets, int capacity, HNode<T,S> *pred) {
     //     // throw error if buckets.size != capacity
@@ -41,14 +42,14 @@ private:
             if(!curr_bucket) {
                 curr_bucket = initBucket(t, (key % t->size));
                 if(type == INS){
-                    t->used++;
+                    // t->used++;
                     if(curr_bucket->getHead()->map->size()>=20){
                         resize(true);
                     }
                 }
             }
-            else if(type == REM and curr_bucket->getHead()->map->size() == 1)
-                t->used--;
+            // else if(type == REM and curr_bucket->getHead()->map->size() == 1)
+            //     t->used--;
             if(curr_bucket->invoke(op))
                 return op->getResponse();
         }
@@ -62,18 +63,18 @@ private:
             if(!curr_bucket) {
                 curr_bucket = initBucket(t, (key % t->size));
                 if(type == INS){
-                    t->used++;
+                    // t->used++;
                     if(curr_bucket->getHead()->map->size()>=20){
                         resize(true);
                     }
                 }
             }
-            else if(type == REM and curr_bucket->getHead()->map->size() == 1)
-                t->used--;
-            if(is_marked_ref((long)u->second) || is_marked_ref((long)v->second)) {
-				return 0;
-			}
-            if(curr_bucket->edgeInvoke(op))
+            // else if(type == REM and curr_bucket->getHead()->map->size() == 1)
+            //     t->used--;
+            // if(is_marked_ref((long)u->second) || is_marked_ref((long)v->second)) {
+			// 	return 0;
+			// }
+            if(curr_bucket->edgeInvoke(op, (int **)(&(u->second)), (int **)(&(v->second))))
                 return op->getResponse();
         }
     }
