@@ -3,6 +3,8 @@
         "*.y": "yacc",
         "atomic": "cpp",
         "any": "cpp",
-        "iostream": "cpp"
+        "iostream": "cpp",
+        "mutex": "cpp",
+        "shared_mutex": "cpp"
     }
 }

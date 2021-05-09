@@ -195,7 +195,7 @@ cout<<"aaya\n";
 	}
 
 	for (i = 0; i < NTHREADS; i++)
-      	{
+    {
 		pthread_join(thr[i], NULL);
 	}
     gettimeofday(&tv2,NULL);
