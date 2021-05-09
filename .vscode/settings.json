@@ -4,7 +4,6 @@
         "atomic": "cpp",
         "any": "cpp",
         "iostream": "cpp",
-        "mutex": "cpp",
-        "shared_mutex": "cpp"
+        "ostream": "cpp"
     }
 }
