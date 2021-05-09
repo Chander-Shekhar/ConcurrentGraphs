@@ -189,8 +189,8 @@ int main(int argc, char*argv[])
     pthread_attr_t attr;
    	pthread_attr_init (&attr);
    	pthread_attr_setdetachstate (&attr, PTHREAD_CREATE_JOINABLE);
-   	
-	gettimeofday(&tv1,NULL);
+	auto start = chrono::system_clock::now();
+	time_t reqEnterTime = chrono::system_clock::to_time_t(start);
 	cout << "timer started . . ." << endl;
 	for (i=0;i < NTHREADS;i++)
 	{
@@ -203,12 +203,14 @@ int main(int argc, char*argv[])
 	}
 
 	for (i = 0; i < NTHREADS; i++)
-    {
+    	{
 		pthread_join(thr[i], NULL);
 	}
-    gettimeofday(&tv2,NULL);
-	difference = my_difftime (&tv1, &tv2);
-	cout << difference->usecs <<  " seconds elapsed" << endl;
+    	
+	auto end = chrono::system_clock::now();
+	time_t actEnterTime=chrono::system_clock::to_time_t(end);
+	auto elapsed=chrono::duration_cast<chrono::microseconds>(end - start);
+	cout << elapsed <<  " seconds elapsed" << endl;
 //sg.PrintGraph();
 /*
   bool cycle = sg.checkCycle();
