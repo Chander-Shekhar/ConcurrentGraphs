@@ -60,7 +60,7 @@ void loadInput(int n){
 		input[i].type=type;
 		if( input[i].type == ADDE || input[i].type==REME || input[i].type==CONE)
 			in>>input[i].v;
-		cout<<input[i].type<<"\t"<<input[i].u <<"\t"<<input[i].v<<endl;
+		// cout<<input[i].type<<"\t"<<input[i].u <<"\t"<<input[i].v<<endl;
 	}
 	in.close();
 }
