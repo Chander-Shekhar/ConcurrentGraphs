@@ -3,6 +3,7 @@
         "*.y": "yacc",
         "atomic": "cpp",
         "any": "cpp",
-        "iostream": "cpp"
+        "iostream": "cpp",
+        "ostream": "cpp"
     }
 }

@@ -45,36 +45,51 @@ struct oper{
 
 oper* input;
 enum type {ADDV, ADDE, REMV, REME, CONV, CONE};
+
 void loadInput(int n){
-
-	cout<<"aaya"<<endl;
-
-	input= new oper[n];
+	input = new oper[n];
 	ifstream in;
   	in.open("input.txt");
 	// int i=0;
 	for(int i=0;i<n;i++){
 		int type;
-		in>>type;
-		in>>input[i].u;
+		in >> type;
+		in >> input[i].u;
 		input[i].type=type;
 		if( input[i].type == ADDE || input[i].type==REME || input[i].type==CONE)
-			in>>input[i].v;
+			in >> input[i].v;
 		// cout<<input[i].type<<"\t"<<input[i].u <<"\t"<<input[i].v<<endl;
 	}
 	in.close();
 }
 
+void initGraph(ConcGraph* g) {
+	ifstream inGraph("initGraph.txt");
+	unordered_set<int> vertices;
+	int u, v, numEdges = 0;
+	while(inGraph >> u >> v) {
+		vertices.insert(u);
+		vertices.insert(v);
+	}
+	inGraph.clear();
+	inGraph.seekg(0);
+	for(int vertex : vertices)
+		g->addV(vertex);
+	while(inGraph >> u >> v) {
+		if(g->addE(u, v))
+			numEdges++;
+	}
+	cout << "Initial graph with " << vertices.size() << " vertices  and " << numEdges << " edges created." << endl;
+}
+
 FILE *fp;
 
- int vertexID;
 double seconds;
 struct timeval tv1, tv2;
 TIME_DIFF * difference;
 int NTHREADS, ops;
 int  total = 0, total1 = 0;
 // enum type {ADDV, ADDE, REMV, REME, CONV, CONE};
-int optype; // what type of opearations 
 char out[30]; // dataset file name,
 int naddV=0, naddE=0, nremV=0, nremE=0, nconV=0, nconE=0; 
 // pthread_mutex_t lock;																																		
@@ -145,23 +160,17 @@ void* pthread_call(void* t)
 
 int main(int argc, char*argv[])
 {
-	
-	vertexID = 1;
 	int i;
     ConcGraph sg;
-	if(argc < 3)
+	if(argc < 2)
 	{
-		cout << "Enter 3 command line arguments - #threads, #vertices initially, #time in seconds" << endl;
+		cout << "Enter 3 command line arguments - #threads, total #operations" << endl;
 		return 0;
 	}
 	
 	NTHREADS = atoi(argv[1]);
-	int n = atoi(argv[2]); 		// initial number of vertices
-	int totalops = atoi(argv[3]);
-			// number of operations each thread going to perform 1k,10k,50k,100k,1k^2
-cout<<"aaya\n";
-	cout<<endl;
-
+	int totalops = atoi(argv[2]);
+	// number of operations each thread going to perform 1k,10k,50k,100k,1k^2
 
 	loadInput(totalops);	
 
@@ -169,16 +178,12 @@ cout<<"aaya\n";
  	//ops = 0;
 //strcpy(out,argv[4]);
 	
-    // pthread_mutex_init(&lock, NULL);
 	//create initial vertices
-	vertexID = n+ 1;	
-	sg.initGraph(n);
-//sg.PrintGraph();
+	initGraph(&sg);
 	cout << "Number of Threads: " << NTHREADS << endl;
-	cout << "Initial graph with " << n << " created." << endl;
- pthread_t *thr = new pthread_t[NTHREADS];
+	pthread_t *thr = new pthread_t[NTHREADS];
 	// Make threads Joinable for sure.
-    	pthread_attr_t attr;
+    pthread_attr_t attr;
    	pthread_attr_init (&attr);
    	pthread_attr_setdetachstate (&attr, PTHREAD_CREATE_JOINABLE);
    	
@@ -195,7 +200,7 @@ cout<<"aaya\n";
 	}
 
 	for (i = 0; i < NTHREADS; i++)
-      	{
+    {
 		pthread_join(thr[i], NULL);
 	}
     gettimeofday(&tv2,NULL);
@@ -209,5 +214,5 @@ cout<<"aaya\n";
     else
       cout<<"cycle is not present"<<endl;  
  */     
- return 0;
+ 	return 0;
 }
