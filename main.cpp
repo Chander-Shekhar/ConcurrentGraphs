@@ -64,7 +64,7 @@ void loadInput(int n){
 }
 
 void initGraph(ConcGraph* g) {
-	ifstream inGraph("initGraphs/initGraph_2^14.txt");
+	ifstream inGraph("initGraphs/initGraph_2^13.txt");
 	unordered_set<int> vertices;
 	int u, v, numEdges = 0;
 	while(inGraph >> u >> v) {
@@ -123,7 +123,7 @@ void* pthread_call(void* t)
 	
 	for(int i=Tid;i<totalops;i+=tcount)
 	{
-		// gettimeofday(&tv2,NULL);
+		// gettimeofday(&tv2,NULL);input
 		// difference = my_difftime (&tv1, &tv2);
 
 		// if(difference->secs >= seconds)
