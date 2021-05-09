@@ -41,13 +41,13 @@ void *SETFLAG(void *ptr, int state)
 
 int GETFLAG(void *ptr)
 {
-	int flag = ((uintptr_t) ptr & (uintptr_t)0x3L);
+	int flag = ((uintptr_t) ptr & (uintptr_t)0x2L);
 	return flag;
 }
 
 void *UNFLAG(void *ptr)
 {
-	ptr = (void *)((uintptr_t)ptr & ~(uintptr_t)0x3L);
+	ptr = (void *)((uintptr_t)ptr & ~(uintptr_t)0x2L);
 	return ptr;
 }
 
