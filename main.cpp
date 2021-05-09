@@ -64,7 +64,7 @@ void loadInput(int n){
 }
 
 void initGraph(ConcGraph* g) {
-	ifstream inGraph("initGraph.txt");
+	ifstream inGraph("initGraphs/initGraph_2^14.txt");
 	unordered_set<int> vertices;
 	int u, v, numEdges = 0;
 	while(inGraph >> u >> v) {
@@ -164,7 +164,7 @@ int main(int argc, char*argv[])
     ConcGraph sg;
 	if(argc < 2)
 	{
-		cout << "Enter 3 command line arguments - #threads, total #operations" << endl;
+		cout << "Enter 2 command line arguments - #threads, total #operations" << endl;
 		return 0;
 	}
 	
