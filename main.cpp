@@ -37,6 +37,33 @@ TIME_DIFF * my_difftime (struct timeval * start, struct timeval * end)
         return diff;
 }
 
+struct oper{
+	int type;
+	int u;
+	int v=-1;
+};
+
+oper* input;
+enum type {ADDV, ADDE, REMV, REME, CONV, CONE};
+void loadInput(int n){
+
+	cout<<"aaya"<<endl;
+
+	input= new oper[n];
+	ifstream in;
+  	in.open("input.txt");
+	// int i=0;
+	for(int i=0;i<n;i++){
+		int type;
+		in>>type;
+		in>>input[i].u;
+		input[i].type=type;
+		if( input[i].type == ADDE || input[i].type==REME || input[i].type==CONE)
+			in>>input[i].v;
+		cout<<input[i].type<<"\t"<<input[i].u <<"\t"<<input[i].v<<endl;
+	}
+	in.close();
+}
 
 FILE *fp;
 
@@ -46,7 +73,7 @@ struct timeval tv1, tv2;
 TIME_DIFF * difference;
 int NTHREADS, ops;
 int  total = 0, total1 = 0;
-enum type {ADDV, ADDE, REMV, REME, CONV, CONE};
+// enum type {ADDV, ADDE, REMV, REME, CONV, CONE};
 int optype; // what type of opearations 
 char out[30]; // dataset file name,
 int naddV=0, naddE=0, nremV=0, nremE=0, nconV=0, nconE=0; 
@@ -54,6 +81,8 @@ int naddV=0, naddE=0, nremV=0, nremE=0, nconV=0, nconE=0;
 
 typedef struct infothread{
   long tid;
+  int tcount;
+  long totalops;
   ConcGraph G;
 }tinfo;
 
@@ -62,114 +91,61 @@ void* pthread_call(void* t)
 {
         tinfo *ti=(tinfo*)t;
         long Tid = ti->tid;
+		int tcount=ti->tcount;
+		int totalops=ti->totalops;
         ConcGraph G1 = ti->G;
-	int u, v;
-	int other, res;
+	int type, res;
  
- 	long long int numOfOperations = 10000000000;
- 	long long int numOfOperations_addEdge = numOfOperations * 0.25; 		// 25% for add edge
-  	long long int numOfOperations_addVertex = numOfOperations * 0.25; 	// 25% for add vertex
-  	long long int numOfOperations_removeVertex = numOfOperations *0.1 ; 	// 10% for remove vertex
-  	long long int numOfOperations_removeEdge = numOfOperations * 0.1; 	// 10% for remove edge
-  	long long int numOfOperations_containsVertex = numOfOperations *0.15; 	// 15% f																														or contains vertex
-  	long long int numOfOperations_containsEdge = numOfOperations * 0.15; 	// 15% for contains edge
+ 	// long long int numOfOperations = 10000000000;
+ 	// long long int numOfOperations_addEdge = numOfOperations * 0.25; 		// 25% for add edge
+  	// long long int numOfOperations_addVertex = numOfOperations * 0.25; 	// 25% for add vertex
+  	// long long int numOfOperations_removeVertex = numOfOperations *0.1 ; 	// 10% for remove vertex
+  	// long long int numOfOperations_removeEdge = numOfOperations * 0.1; 	// 10% for remove edge
+  	// long long int numOfOperations_containsVertex = numOfOperations *0.15; 	// 15% f																														or contains vertex
+  	// long long int numOfOperations_containsEdge = numOfOperations * 0.15; 	// 15% for contains edge
 
-	long long int total = numOfOperations_addEdge + numOfOperations_addVertex + numOfOperations_removeVertex + numOfOperations_removeEdge + numOfOperations_containsVertex + numOfOperations_containsEdge; 
+	// long long int total = numOfOperations_addEdge + numOfOperations_addVertex + numOfOperations_removeVertex + numOfOperations_removeEdge + numOfOperations_containsVertex + numOfOperations_containsEdge; 
 	
-	while(total > 0)
+	for(int i=Tid;i<totalops;i+=tcount)
 	{
-		gettimeofday(&tv2,NULL);
-		difference = my_difftime (&tv1, &tv2);
+		// gettimeofday(&tv2,NULL);
+		// difference = my_difftime (&tv1, &tv2);
 
-		if(difference->secs >= seconds)
-			break;
+		// if(difference->secs >= seconds)
+		// 	break;
 
-		int other=rand()%6;	
-	        if(other == 0) 
+		int type=input[i].type;	
+	    if(type == ADDE) 
 		{
-			if(numOfOperations_addEdge > 0)
-   			{	      
-		l1:		u = (rand() % (vertexID));		//vertex IDs are from 1
-				v = (rand() % (vertexID));
-				if(u == v || u == 0 || v == 0)			//simple graph without self loops
-					goto l1;
-				res = G1.addE(u,v); 
-		         	numOfOperations_addEdge = numOfOperations_addEdge - 1;				        
-				total = total - 1;
- 				ops++;				
-      			}
-      		}
-      		else if(other == 1)
-       		{
-     			if(numOfOperations_addVertex > 0)
-        		{			
-				v = vertexID;		//vertices do not come again
-				vertexID++;
-				res = G1.addV(v);
-			        numOfOperations_addVertex = numOfOperations_addVertex - 1;
-				ops++;				
-			        total = total - 1;
-        		} 
-       		} 
-	     	else if(other == 2)
-     		{
-       			if(numOfOperations_removeVertex > 0)
-       			{		        
-			l2:	v = rand() % (vertexID);		//dont decrement the total vertex count
-				if(v == 0)
-					goto l2;
-				res = G1.removeV(v);
-			        numOfOperations_removeVertex = numOfOperations_removeVertex - 1;
-				ops++;				
-			        total = total - 1;
-        		} 
-       		}
-		else if(other == 3)
+			res = G1.addE(input[i].u,input[i].v); 			
+      	}
+		else if(type == ADDV)
 		{
-			if(numOfOperations_removeEdge > 0)
-			{
-		l3:		u = (rand() % (vertexID));		//vertex IDs are from 1
-				v = (rand() % (vertexID));
-				if(u == v || u == 0 || v == 0)	
-					goto l3;
-				res = G1.removeE(u,v); 
-		         	numOfOperations_removeEdge = numOfOperations_removeEdge - 1;				        
-				ops++;				
-				total = total - 1;
-			}
+			res = G1.addV(input[i].u);
+		} 
+		else if(type == REMV)
+		{
+			res = G1.removeV(input[i].u);
 		}
-		else if(other == 4)
+		else if(type == REME)
 		{
-			if(numOfOperations_containsVertex > 0)
-			{
-		l4:		u = (rand() % (vertexID));		//vertex IDs are from 1
-				if(u == 0)	
-					goto l4;
-				res = G1.containsV(u); 
-		         	numOfOperations_containsVertex = numOfOperations_containsVertex - 1;				        
-				ops++;				
-				total = total - 1;
-			}
+			res = G1.removeE(input[i].u,input[i].v); 
 		}
-		else if(other == 5)
+		else if(type == CONV)
 		{
-			if(numOfOperations_containsEdge > 0)
-			{
-		l5:		u = (rand() % (vertexID));		//vertex IDs are from 1
-				v = (rand() % (vertexID));
-				if(u == v || u == 0 || v == 0)		
-					goto l5;
-				res = G1.containsE(u,v); 
-		         	numOfOperations_containsEdge = numOfOperations_containsEdge - 1;				        
-				ops++;				
-				total = total - 1;
-			}
+			res = G1.containsV(input[i].u); 		
 		}
+		else if(type == CONE)
+		{
+			res = G1.containsE(input[i].u,input[i].v); 
+		}
+		
 	} 		//end of while loop
 }
 
 int main(int argc, char*argv[])
 {
+	
 	vertexID = 1;
 	int i;
     ConcGraph sg;
@@ -178,12 +154,18 @@ int main(int argc, char*argv[])
 		cout << "Enter 3 command line arguments - #threads, #vertices initially, #time in seconds" << endl;
 		return 0;
 	}
-
+	
 	NTHREADS = atoi(argv[1]);
 	int n = atoi(argv[2]); 		// initial number of vertices
-	seconds = atoi(argv[3]);
+	int totalops = atoi(argv[3]);
 			// number of operations each thread going to perform 1k,10k,50k,100k,1k^2
-			
+cout<<"aaya\n";
+	cout<<endl;
+
+
+	loadInput(totalops);	
+
+	
  	//ops = 0;
 //strcpy(out,argv[4]);
 	
@@ -202,23 +184,23 @@ int main(int argc, char*argv[])
    	
 	gettimeofday(&tv1,NULL);
 	cout << "timer started . . ." << endl;
-        for (i=0;i < NTHREADS;i++)
-       	{
-       	      tinfo *t =(tinfo*) malloc(sizeof(tinfo));
+	for (i=0;i < NTHREADS;i++)
+	{
+		tinfo *t =(tinfo*) malloc(sizeof(tinfo));
 		t->tid = i;
 		t->G = sg;
-       		pthread_create(&thr[i], &attr, pthread_call, (void*)t);
-        }
+		t->tcount=NTHREADS;
+		t->totalops=totalops;
+		pthread_create(&thr[i], &attr, pthread_call, (void*)t);
+	}
 
 	for (i = 0; i < NTHREADS; i++)
       	{
 		pthread_join(thr[i], NULL);
 	}
-	cout << seconds <<  " seconds elapsed" << endl;
-
-    	cout << "Total operations: " << ops <<endl;
-        gettimeofday(&tv2,NULL);
+    gettimeofday(&tv2,NULL);
 	difference = my_difftime (&tv1, &tv2);
+	cout << difference->usecs <<  " seconds elapsed" << endl;
 //sg.PrintGraph();
 /*
   bool cycle = sg.checkCycle();

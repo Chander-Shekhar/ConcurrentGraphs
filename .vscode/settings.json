@@ -1,5 +1,8 @@
 {
     "files.associations": {
-        "atomic": "cpp"
+        "*.y": "yacc",
+        "atomic": "cpp",
+        "any": "cpp",
+        "iostream": "cpp"
     }
 }
