@@ -49,7 +49,7 @@ enum type {ADDV, ADDE, REMV, REME, CONV, CONE};
 void loadInput(int n){
 	input = new oper[n];
 	ifstream in;
-  	in.open("input.txt");
+  	in.open("../input.txt");
 	// int i=0;
 	for(int i=0;i<n;i++){
 		int type;
@@ -64,7 +64,7 @@ void loadInput(int n){
 }
 
 void initGraph(ConcGraph* g) {
-	ifstream inGraph("initGraphs/initGraph_2^13.txt");
+	ifstream inGraph("../initGraphs/initGraph_2^13.txt");
 	unordered_set<int> vertices;
 	int u, v, numEdges = 0;
 	while(inGraph >> u >> v) {
