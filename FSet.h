@@ -105,7 +105,7 @@ public:
 		return false;
 	}
 
-	bool edgeIedgeInvokenvoke(FSetOP<T,S>* op, int **u, int **v) {
+	bool edgeInvoke(FSetOP<T,S>* op, int **u, int **v) {
 		FSetNode<T,S>* o = node.load(memory_order_seq_cst);
 
 		while(o->ok){
