@@ -15,7 +15,7 @@ struct FSetOP{
 	OPType type;
 	T key;
 	S value;
-	int resp; // we will add different types of responses 0 ==> error, 1 ==> new key and value added, 2==> new value added 
+	int resp;
 	FSetOP(OPType type,T key, S value){
 		this->type=type;
 		this->key=key;
@@ -76,13 +76,7 @@ public:
 					resp=1;
 				}
 				else{
-					// if(op->value == o->map->at(op->key))
-						resp=0;
-					// else{
-					// 	*map=*(o->map);
-					// 	(*map)[op->key]=op->value;
-					// 	resp=2;
-					// }
+					resp=0;
 				}
 			}
 			else if(op->type==REM){
@@ -104,7 +98,7 @@ public:
 		}
 		return false;
 	}
-
+	
 	bool edgeInvoke(FSetOP<T,S>* op, int **u, int **v) {
 		FSetNode<T,S>* o = node.load(memory_order_seq_cst);
 
@@ -120,13 +114,7 @@ public:
 					resp=1;
 				}
 				else{
-					// if(op->value == o->map->at(op->key))
 					resp=0;
-					// else{
-					// 	*map=*(o->map);
-					// 	(*map)[op->key]=op->value;
-					// 	resp=2;
-					// }
 				}
 			}
 			else if(op->type==REM){
@@ -142,8 +130,6 @@ public:
 			}
 			FSetNode<T,S>* n=new FSetNode<T,S>(map,true);
 			if(node.compare_exchange_strong(o,n)){
-				// if(op->type == REM && resp)
-				// 	o->map[op->key] = (S)set_mark((long)o->map[op->key]);
 				op->resp=resp;
 				return true;
 			}
@@ -159,9 +145,6 @@ public:
 
 	pair<typename unordered_map<T,S>::iterator, typename unordered_map<T,S>::iterator> at(T k) {
 		FSetNode<T,S>* o = node.load(memory_order_seq_cst);
-		// if(o->map->find(k) != o->map->end())
-		// 	return o->map->at(k);
-		// return nullptr;
 		return {o->map->find(k), o->map->end()}; 
 	}
 

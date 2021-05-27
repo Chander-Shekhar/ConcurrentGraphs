@@ -18,15 +18,7 @@ public:
             buckets[i].store(nullptr);
         size = capacity;
         this->pred = pred;
-        // used = 0;
     }
-    // HNode(atomic<FSet<T,S>*> *buckets, int capacity, HNode<T,S> *pred) {
-    //     // throw error if buckets.size != capacity
-    //     this->buckets = buckets;
-    //     this->size = capacity;
-    //     this->pred = pred;
-    //     used = 0;
-    // }
 };
 
 template<typename T,typename S>
@@ -41,15 +33,15 @@ private:
             FSet<T,S> *curr_bucket = t->buckets[key % t->size].load(memory_order_seq_cst);
             if(!curr_bucket) {
                 curr_bucket = initBucket(t, (key % t->size));
+
+                // The resize heuristic can be changed according to preference.
+                // This has no effect on the correctness of the algorithm.
                 if(type == INS){
-                    // t->used++;
                     if(curr_bucket->getHead()->map->size()>=20){
                         resize(true);
                     }
                 }
             }
-            // else if(type == REM and curr_bucket->getHead()->map->size() == 1)
-            //     t->used--;
             if(curr_bucket->invoke(op))
                 return op->getResponse();
         }
@@ -62,18 +54,15 @@ private:
             FSet<T,S> *curr_bucket = t->buckets[key % t->size].load(memory_order_seq_cst);
             if(!curr_bucket) {
                 curr_bucket = initBucket(t, (key % t->size));
+                
+                // The resize heuristic can be changed according to preference.
+                // This has no effect on the correctness of the algorithm.
                 if(type == INS){
-                    // t->used++;
                     if(curr_bucket->getHead()->map->size()>=20){
                         resize(true);
                     }
                 }
             }
-            // else if(type == REM and curr_bucket->getHead()->map->size() == 1)
-            //     t->used--;
-            // if(is_marked_ref((long)u->second) || is_marked_ref((long)v->second)) {
-			// 	return 0;
-			// }
             if(curr_bucket->edgeInvoke(op, (int **)(&(u->second)), (int **)(&(v->second))))
                 return op->getResponse();
         }
@@ -125,26 +114,17 @@ private:
     }
 public:
     HashTable() {
-        // atomic<FSet<T,S>*> init = new atomic<FSet<T,S>*>[1];
         head.store(new HNode<T,S>(1, nullptr));
         head.load(memory_order_seq_cst)->buckets[0].store(new FSet<T,S>(new unordered_map<T,S>(), true));
     }
 
     bool insert(T key, S value) {
         bool resp = apply(INS, key, value);
-        
-        // HNode<T,S> *t = head.load(memory_order_seq_cst);
-        // if(t->used >= (3*t->size)/4)
-        //     resize(true);
         return resp;
     }
 
     bool insert(T key, S value, typename unordered_map<T, HashTable<T, S>*>::iterator u, typename unordered_map<T, HashTable<T, S>*>::iterator v) {
         bool resp = apply(INS, key, value, u, v);
-        
-        // HNode<T,S> *t = head.load(memory_order_seq_cst);
-        // if(t->used >= (3*t->size)/4)
-        //     resize(true);
         return resp;
     }
 
@@ -152,6 +132,8 @@ public:
         bool resp = apply(REM, key, value);
         HNode<T,S> *t = head.load(memory_order_seq_cst);
         int size=t->size;
+        // The resize heuristic can be changed according to preference.
+        // This has no effect on the correctness of the algorithm.
         if(size >= 3){
             int a=rand()%size;
             int b=(rand()%size+a)%size;
@@ -166,6 +148,8 @@ public:
         bool resp = apply(REM, key, value, u, v);
         HNode<T,S> *t = head.load(memory_order_seq_cst);
         int size=t->size;
+        // The resize heuristic can be changed according to preference.
+        // This has no effect on the correctness of the algorithm.
         if(size >= 3){
             int a=rand()%size;
             int b=(rand()%size+a)%size;

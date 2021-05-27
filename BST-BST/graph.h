@@ -27,21 +27,20 @@ public:
     }
 
     bool addE(int key1, int key2) {
-        // u = locateV(key1);
-        // v = locateV(key2);
-        // if(!adjlist->contains(key1) || !adjlist->contains(key2))
-        //     return false;
-        // If either vertex is not present.
         BST::Node* pred1, * curr1;
         BST::Operation* predOp1, * currOp1;
         BST::Node* pred2, * curr2;
         BST::Operation* predOp2, * currOp2;
-
+        
+        // Locate both the vertices 
         auto p1=graph->find(key1, pred1, predOp1, curr1, currOp1, &(graph->root));
         auto p2=graph->find(key2, pred2, predOp2, curr2, currOp2, &(graph->root));
 
+        // If either vertex is not present, abort.
         if(p1!=FOUND || p2!=FOUND)
             return false;
+        
+        // Inserts edge if not present already.
         return (curr1->rootEdge->add(key2,curr2));
     }
 
@@ -50,12 +49,15 @@ public:
         BST::Operation* predOp1, * currOp1;
         BST::Node* pred2, * curr2;
         BST::Operation* predOp2, * currOp2;
-
+        
+        // Locate both the vertices 
         auto p1=graph->find(key1, pred1, predOp1, curr1, currOp1, &(graph->root));
         auto p2=graph->find(key2, pred2, predOp2, curr2, currOp2, &(graph->root));
-
+        
+        // If either vertex is not present, abort.
         if(p1!=FOUND || p2!=FOUND)
             return false;
+        // Removes edge if present.
         return (curr1->rootEdge->removeE(key2));
     }
 
@@ -64,10 +66,11 @@ public:
         BST::Operation* predOp1, * currOp1;
         BST::Node* pred2, * curr2;
         BST::Operation* predOp2, * currOp2;
-
+        // Locate both the vertices
         auto p1=graph->find(key1, pred1, predOp1, curr1, currOp1, &(graph->root));
         auto p2=graph->find(key2, pred2, predOp2, curr2, currOp2, &(graph->root));
-
+        
+        // If either vertex is not present, abort.
         if(p1!=FOUND || p2!=FOUND)
             return false;
             
